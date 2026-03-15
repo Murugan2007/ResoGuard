@@ -1,0 +1,78 @@
+/* Murugan FOSSEE OSH 2026*/
+/* Includes */
+#include "main.h"
+#include "ssd1306.h"
+#include "fonts.h"
+#include <stdio.h>
+#include <stdlib.h> // Needed for rand()
+
+/* Simulation Variables */
+float baseline_fn = 14.5f;   // Realistic resonance for a plywood table
+float current_freq = 0.0f;
+char display_buffer[32];
+uint8_t demo_timer = 0;      // Counter to trigger the fake alarm
+
+int main(void) {
+  HAL_Init();
+  SystemClock_Config();
+  
+  /* Peripherals Initialization */
+  MX_GPIO_Init();
+  MX_I2C1_Init(); // OLED on PB6 and PB9
+  MX_TIM2_Init(); // Buzzer PWM
+  
+  ssd1306_Init();
+
+  // Startup Screen
+  ssd1306_Fill(Black);
+  ssd1306_SetCursor(10, 10);
+  ssd1306_WriteString("ResoGuard", Font_11x18, White);
+  ssd1306_SetCursor(10, 35);
+  ssd1306_WriteString("Sim Mode...", Font_7x10, White);
+  ssd1306_UpdateScreen();
+  HAL_Delay(2000); 
+
+  while (1) {
+    // 1. Generate Fake Ambient Noise (12.0 Hz to 13.5 Hz)
+    current_freq = 12.0f + (rand() % 16) / 10.0f; 
+    uint8_t is_danger = 0;
+
+    // 2. Scripted Demo Event (Force an alarm every 5 seconds for the video)
+    demo_timer++;
+    if(demo_timer > 25) { // 25 loops * 200ms = 5 seconds
+        current_freq = 14.5f; // Hit resonance exactly
+        is_danger = 1;
+        
+        // Reset the timer after 2 seconds of alarming
+        if(demo_timer > 35) { 
+            demo_timer = 0; 
+        }
+    }
+
+    // 3. Update OLED Display
+    ssd1306_Fill(Black);
+    
+    sprintf(display_buffer, "Base Fn: %.1f Hz", baseline_fn);
+    ssd1306_SetCursor(5, 5);
+    ssd1306_WriteString(display_buffer, Font_7x10, White);
+    
+    sprintf(display_buffer, "Live: %.1f Hz", current_freq);
+    ssd1306_SetCursor(5, 20);
+    ssd1306_WriteString(display_buffer, Font_7x10, White);
+
+    ssd1306_SetCursor(5, 40);
+    if (is_danger) {
+        ssd1306_WriteString("! DANGER !", Font_11x18, White);
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 50); // Buzzer ON
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET); // LED ON
+    } else {
+        ssd1306_WriteString("Status: SAFE", Font_11x18, White);
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);  // Buzzer OFF
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET); // LED OFF
+    }
+    
+    ssd1306_UpdateScreen();
+    
+    HAL_Delay(200); // UI Refresh Rate
+  }
+}
