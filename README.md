@@ -13,7 +13,7 @@
 ​Brain: STM32F411E-DISCO (Cortex-M4)
 ​Eyes: On-board 9-axis MEMS sensor (LSM303DLHC)
 ​Screen: 0.96" SSD1306 OLED (To show live Hz)
-​Alarm: Passive Buzzer + my Arctic Fox Jet Speaker for high-volume alerts
+​Alarm: Passive Buzzer 
 ​IoT Wingman: ESP32 (for future WiFi connectivity)
 
 # **How it Works (The Science)**
